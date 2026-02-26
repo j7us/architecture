@@ -85,3 +85,4 @@ state = RobotState(0.0, 0.0, 0, WATER)
 def execute_commands(code) :
     global state
     state = make(transfer_to_cleaner, code, state)
+    return state
