@@ -4,13 +4,13 @@ import pure_robot
 class CleanerApi:
 
     # конструктор
-    def __init__(self, move, turn, set_state, start, stop):
+    def __init__(self):
         self.cleaner_state = pure_robot.RobotState(0.0, 0.0, 0, pure_robot.WATER)
-        self.move = move
-        self.turn = turn
-        self.set_state = set_state
-        self.start = start
-        self.stop = stop
+        self.move = pure_robot.move
+        self.turn = pure_robot.turn
+        self.set_state = pure_robot.set_state
+        self.start = pure_robot.start
+        self.stop = pure_robot.stop
 
     # взаимодействие с роботом вынесено в отдельную функцию
     def transfer_to_cleaner(self,message):
