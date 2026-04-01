@@ -12,7 +12,7 @@ class SetStateResponse:
     NO_WATER = "OUT_OF_WATER"
     NO_SOAP = "OUT_OF_SOAP"
 
-RobotState = namedtuple("RobotState", "x y angle state errors")
+RobotState = namedtuple("RobotState", "x y angle state")
 
 WATER = 1
 SOAP = 2
@@ -56,16 +56,13 @@ def move(dist):
 
         x, y, status = check_position(act_x, act_y)
 
-        if not status == SetStateResponse.MOVE_OK:
-            return
-
         new_state = RobotState(
             x,
             y,
             old_state.angle,
             old_state.state
         )
-        return new_state, log + [f'POS({int(new_state.x)},{int(new_state.y)})']
+        return new_state, log + [f'POS({int(new_state.x)},{int(new_state.y)})'] + ['Удар по барьеру'] if status != MoveResponse.OK else []
 
     return inner
 
@@ -90,7 +87,9 @@ def set_state(new_mode):
             old_state.angle,
             new_mode
         )
-        return new_state, log + [f'STATE {new_mode}']
+
+        state = check_resources(new_mode)
+        return new_state, log + [f'STATE {new_mode}'] + ['Нет ресурсов'] if not state == SetStateResponse.OK else []
 
     return inner
 
