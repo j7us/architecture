@@ -21,6 +21,12 @@ WATER = 1
 SOAP = 2
 BRUSH = 3
 
+names = {
+    WATER: "WATER",
+    SOAP: "SOAP",
+    BRUSH: "BRUSH",
+}
+
 
 class StateMonad:
     def __init__(self, state: RobotState, log: List[str] = None, allowed_actions: Dict[str, bool] = None):
@@ -28,9 +34,10 @@ class StateMonad:
         self.log = log or []
         self.allowed_actions = allowed_actions
 
-    def bind(self, func):
-        if not self.allowed_actions[func.__name__]:
-            return StateMonad(self.state, self.log, self.allowed_actions)
+    def bind(self, func, name):
+        if not self.allowed_actions[name]:
+            return StateMonad(self.state, self.log + [f'Функция {name} не доступна'], self.allowed_actions)
+
         new_state, new_log, new_allowed_actions = func(self.state, self.log)
         return StateMonad(new_state, new_log, {**self.allowed_actions, **new_allowed_actions})
 
@@ -72,7 +79,7 @@ def move(dist, old_state, log):
                if move_result == MoveResponse.OK
                else f'HIT_BARRIER at ({int(constrained_x)},{int(constrained_y)})')
 
-    return new_state, log + [message], move_result
+    return new_state, log + [message], {'move': True} if move_result == MoveResponse.OK else {'move': False}
 
 
 def turn(angle, old_state, log):
@@ -82,7 +89,7 @@ def turn(angle, old_state, log):
         old_state.angle + angle,
         old_state.state
     )
-    return new_state, log + [f'ANGLE {new_state.angle}'], MoveResponse.OK
+    return new_state, log + [f'ANGLE {new_state.angle}'], {'move': True}
 
 
 def set_state(new_mode, old_state, log):
@@ -90,7 +97,7 @@ def set_state(new_mode, old_state, log):
 
     if resource_check != SetStateResponse.OK:
         message = f'RESOURCE ERROR: {resource_check} for mode {new_mode}'
-        return old_state, log + [message], resource_check
+        return old_state, log + [message], {f'set_{names[new_mode]}': False}
 
     new_state = RobotState(
         old_state.x,
@@ -98,22 +105,24 @@ def set_state(new_mode, old_state, log):
         old_state.angle,
         new_mode
     )
-    return new_state, log + [f'STATE {new_mode}'], SetStateResponse.OK
+    return new_state, log + [f'STATE {new_mode}'], {}
 
 actions_to_allow = {
             'move': True,
             'turn': True,
-            'set_state': True,
+            'set_SOAP': True,
+            'set_WATER': True,
+            'set_BRUSH': True,
             'start': True,
             'stop': True
         }
 
 initial_state = StateMonad(RobotState(0.0, 0.0, 0, WATER), None, actions_to_allow)
 result = (initial_state
-          .bind(lambda state, log: move(150, state, log))
-          .bind(lambda state, log: set_state(SOAP, state, log))
-          .bind(lambda state, log: turn(-90, state, log))
-          .bind(lambda state, log: move(50, state, log)))
+          .bind(lambda state, log: move(150, state, log), 'move')
+          .bind(lambda state, log: set_state(SOAP, state, log), 'set_SOAP')
+          .bind(lambda state, log: turn(-90, state, log), 'turn')
+          .bind(lambda state, log: move(50, state, log), 'move'))
 
 print(f"Final state: {result.state}")
 print(f"Log: {result.log}")
